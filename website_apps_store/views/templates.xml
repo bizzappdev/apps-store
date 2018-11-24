@@ -96,10 +96,16 @@
                 <t t-call="website_apps_store.version_display"/>
                 <t t-call="website_apps_store.maturity_display"/>
             </xpath>
+            <xpath expr="//t[@t-set='website_sale_sortable']" position="before">
+                <t t-set="author_asc_label">Author - A to Z</t>
+                <t t-set="author_desc_label">Author - Z to A</t>
+            </xpath>
             <xpath expr="//t[@t-set='website_sale_sortable']" position="replace">
                 <t t-set="website_sale_sortable" t-value="[
                 (name_asc_label, 'name asc'),
-                (name_desc_label, 'name desc')
+                (name_desc_label, 'name desc'),
+                (author_asc_label, 'app_author_ids asc'),
+                (author_desc_label, 'app_author_ids desc'),
             ]"/>
             </xpath>
         </template>
