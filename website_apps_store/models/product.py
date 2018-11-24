@@ -17,6 +17,7 @@ class ProductTemplate(models.Model):
         store=True,)
 
     @api.depends('product_variant_ids', 'product_variant_id',
+                 'product_variant_ids.app_author_ids',
                  'product_variant_id.app_author_ids')
     def _compute_app_author_ids(self):
         for template in self:
