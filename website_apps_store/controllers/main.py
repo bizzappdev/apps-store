@@ -21,21 +21,6 @@ class WebsiteSaleCustom(WebsiteSale):
 
     def _get_search_domain(self, search, category, attrib_values):
         domain = request.website.sale_product_domain()
-        if search:
-            for srch in search.split(" "):
-                domain += [
-                    '|', '|', '|', '|', '|', '|', '|', '|',
-                    ('name', 'ilike', srch),
-                    ('technical_name', 'ilike', srch),
-                    ('description', 'ilike', srch),
-                    ('description_sale', 'ilike', srch),
-                    ('product_variant_ids.default_code', 'ilike', srch),
-                    ('product_variant_ids.attribute_value_ids.name',
-                     'ilike', srch),
-                    ('product_variant_ids.app_description_rst_html',
-                     'ilike', srch),
-                    ('product_variant_ids.app_author_ids.name', 'ilike', srch),
-                    ('product_variant_ids.app_summary', 'ilike', srch)]
         if category:
             domain += [('public_categ_ids', 'child_of', int(category))]
 
@@ -111,13 +96,56 @@ class WebsiteSaleCustom(WebsiteSale):
             ('attribute_id', '=', attribute_id.id)])
         authors = request.env['odoo.author'].search([])
         Product = request.env['product.template']
+        all_products = False
+        if search:
+            domain1 = ['|', ('name', '=', search),
+                       ('technical_name', '=', search)]
+            domain1 += domain
+            prdt_first = Product.search(domain1)
+            domain2 = ['|', ('name', 'ilike', search),
+                       ('technical_name', 'ilike', search)]
+            domain2 += domain
+            prdt_second = Product.search(domain2)
+            domain3 = [
+                ('product_variant_ids.app_author_ids.name', '=', search
+                 )]
+            domain3 += domain
+            prdt_third = Product.search(domain3)
+            domain4 = [('product_variant_ids.app_author_ids.name', 'ilike',
+                        search)]
+            domain4 += domain
+            prdt_fourth = Product.search(domain4)
+            domain5 = []
+            domain5 += domain
+            for srch in search.split(" "):
+                domain5 += ['|', ('name', 'ilike', srch),
+                            ('technical_name', 'ilike', srch)]
+            prdt_fifth = Product.search(domain5)
+            all_products = prdt_first + prdt_second + prdt_third +\
+                prdt_fourth + prdt_fifth
 
-        product_count = Product.search_count(domain)
-        pager = request.website.pager(url=url, total=product_count,
-                                      page=page, step=ppg,
-                                      scope=7, url_args=post)
-        products = Product.search(domain, limit=ppg, offset=pager['offset'],
-                                  order=self._get_search_order(post))
+        product_records = []
+        if all_products:
+            for pr_rec in all_products:
+                if pr_rec.id not in product_records:
+                    product_records.append(pr_rec.id)
+
+        if not search:
+            product_count = Product.search_count(domain)
+            pager = request.website.pager(url=url, total=product_count,
+                                          page=page, step=ppg,
+                                          scope=7, url_args=post)
+            products = Product.search(domain, limit=ppg,
+                                      offset=pager['offset'],
+                                      order=self._get_search_order(post))
+        else:
+            product_count = len(product_records)
+            pager = request.website.pager(url=url, total=product_count,
+                                          page=page, step=ppg,
+                                          scope=7, url_args=post)
+            products = Product.search([('id', 'in', product_records)],
+                                      limit=ppg, offset=pager['offset'],
+                                      order=self._get_search_order(post))
 
         ProductAttribute = request.env['product.attribute']
         if products:
